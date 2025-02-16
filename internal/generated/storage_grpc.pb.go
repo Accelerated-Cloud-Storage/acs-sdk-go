@@ -19,20 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ObjectStorageCache_CreateBucket_FullMethodName  = "/proto.ObjectStorageCache/CreateBucket"
-	ObjectStorageCache_DeleteBucket_FullMethodName  = "/proto.ObjectStorageCache/DeleteBucket"
-	ObjectStorageCache_ListBuckets_FullMethodName   = "/proto.ObjectStorageCache/ListBuckets"
-	ObjectStorageCache_HeadBucket_FullMethodName    = "/proto.ObjectStorageCache/HeadBucket"
-	ObjectStorageCache_PutObject_FullMethodName     = "/proto.ObjectStorageCache/PutObject"
-	ObjectStorageCache_GetObject_FullMethodName     = "/proto.ObjectStorageCache/GetObject"
-	ObjectStorageCache_DeleteObject_FullMethodName  = "/proto.ObjectStorageCache/DeleteObject"
-	ObjectStorageCache_DeleteObjects_FullMethodName = "/proto.ObjectStorageCache/DeleteObjects"
-	ObjectStorageCache_CopyObject_FullMethodName    = "/proto.ObjectStorageCache/CopyObject"
-	ObjectStorageCache_HeadObject_FullMethodName    = "/proto.ObjectStorageCache/HeadObject"
-	ObjectStorageCache_ListObjects_FullMethodName   = "/proto.ObjectStorageCache/ListObjects"
-	ObjectStorageCache_Authenticate_FullMethodName  = "/proto.ObjectStorageCache/Authenticate"
-	ObjectStorageCache_RotateKey_FullMethodName     = "/proto.ObjectStorageCache/RotateKey"
-	ObjectStorageCache_ShareBucket_FullMethodName   = "/proto.ObjectStorageCache/ShareBucket"
+	ObjectStorageCache_CreateBucket_FullMethodName  = "/client.proto.ObjectStorageCache/CreateBucket"
+	ObjectStorageCache_DeleteBucket_FullMethodName  = "/client.proto.ObjectStorageCache/DeleteBucket"
+	ObjectStorageCache_ListBuckets_FullMethodName   = "/client.proto.ObjectStorageCache/ListBuckets"
+	ObjectStorageCache_HeadBucket_FullMethodName    = "/client.proto.ObjectStorageCache/HeadBucket"
+	ObjectStorageCache_PutObject_FullMethodName     = "/client.proto.ObjectStorageCache/PutObject"
+	ObjectStorageCache_GetObject_FullMethodName     = "/client.proto.ObjectStorageCache/GetObject"
+	ObjectStorageCache_DeleteObject_FullMethodName  = "/client.proto.ObjectStorageCache/DeleteObject"
+	ObjectStorageCache_DeleteObjects_FullMethodName = "/client.proto.ObjectStorageCache/DeleteObjects"
+	ObjectStorageCache_CopyObject_FullMethodName    = "/client.proto.ObjectStorageCache/CopyObject"
+	ObjectStorageCache_HeadObject_FullMethodName    = "/client.proto.ObjectStorageCache/HeadObject"
+	ObjectStorageCache_ListObjects_FullMethodName   = "/client.proto.ObjectStorageCache/ListObjects"
+	ObjectStorageCache_Authenticate_FullMethodName  = "/client.proto.ObjectStorageCache/Authenticate"
+	ObjectStorageCache_RotateKey_FullMethodName     = "/client.proto.ObjectStorageCache/RotateKey"
+	ObjectStorageCache_ShareBucket_FullMethodName   = "/client.proto.ObjectStorageCache/ShareBucket"
 )
 
 // ObjectStorageCacheClient is the client API for ObjectStorageCache service.
@@ -552,7 +552,7 @@ func _ObjectStorageCache_ShareBucket_Handler(srv interface{}, ctx context.Contex
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var ObjectStorageCache_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "proto.ObjectStorageCache",
+	ServiceName: "client.proto.ObjectStorageCache",
 	HandlerType: (*ObjectStorageCacheServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

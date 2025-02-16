@@ -21,7 +21,7 @@ language version.
 address critical security issues.**
 
 ## Getting started
-[![SDK Documentation](https://img.shields.io/badge/SDK-Documentation-blue)](https://acceleratedcloudstorage.com) [![API Reference](https://img.shields.io/badge/api-reference-blue.svg)](https://pkg.go.dev/github.com/AcceleratedCloudStorage/acs-sdk-go) 
+[![SDK Documentation](https://img.shields.io/badge/SDK-Documentation-blue)](https://acceleratedcloudstorage.com) [![API Reference](https://img.shields.io/badge/API-Reference-blue.svg)](https://pkg.go.dev/github.com/AcceleratedCloudStorage/acs-sdk-go) [![Demo](https://img.shields.io/badge/Demo-Videos-blue.svg)](https://www.youtube.com/@AcceleratedCloudStorageSales) 
 
 To get started working with the SDK setup your project for Go modules, and retrieve the SDK dependencies with `go get`. This example shows how you can use the SDK to make an API request using the SDK's client.
 

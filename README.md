@@ -26,7 +26,7 @@ address critical security issues.**
 To get started working with the SDK setup your project for Go modules, and retrieve the SDK dependencies with `go get`. This example shows how you can use the SDK to make an API request using the SDK's client.
 
 #### Setup credientials 
-Move your .acs folder to your home folder after downloading it from the console on the [website](https://acceleratedcloudstorage.com)
+Move your .acs folder to your home folder after downloading it from the console on the [website](https://acceleratedcloudstorage.com).
 
 #### Initialize Project
 ```sh
@@ -40,7 +40,7 @@ $ go get github.com/AcceleratedCloudStorage/acs-sdk-go/client
 ```
 
 #### Write Code
-Check out the example folder 
+Check out the example folder. 
 
 ## Getting Help
 

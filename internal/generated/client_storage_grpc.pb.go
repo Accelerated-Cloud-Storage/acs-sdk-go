@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.29.3
-// source: storage.proto
+// source: client_storage.proto
 
 package generated
 
@@ -617,5 +617,5 @@ var ObjectStorageCache_ServiceDesc = grpc.ServiceDesc{
 			ServerStreams: true,
 		},
 	},
-	Metadata: "storage.proto",
+	Metadata: "client_storage.proto",
 }

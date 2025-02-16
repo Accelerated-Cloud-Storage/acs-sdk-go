@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
-	pb "github.com/AcceleratedCloudStorage/acs-sdk-go/internal/generated"
+	pb "github.com/AcceleratedCloudStorage/acs-sdk-go/generated"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v2"

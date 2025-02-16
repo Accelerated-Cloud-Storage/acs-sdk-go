@@ -4,7 +4,7 @@ package proto;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/AcceleratedCloudStorage/acs-sdk-go/internal/generated";
+option go_package = "github.com/AcceleratedCloudStorage/acs-sdk-go/generated";
 
 service ObjectStorageCache {
   // Bucket operations

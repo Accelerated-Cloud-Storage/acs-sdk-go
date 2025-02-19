@@ -13,7 +13,7 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	pb "github.com/AcceleratedCloudStorage/acs-sdk-go/utility/generated"
+	pb "github.com/AcceleratedCloudStorage/acs-sdk-go/generated"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"

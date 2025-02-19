@@ -1,3 +1,5 @@
+// Copyright 2025 Accelerated Cloud Storage Corporation. All Rights Reserved.
+// Note: Experimental code, not for production use.
 package fuse
 
 import (

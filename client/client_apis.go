@@ -1,3 +1,4 @@
+// Copyright 2025 Accelerated Cloud Storage Corporation. All Rights Reserved.
 // Package client provides a Go client for interacting with the Accelerated Cloud Storage service.
 package client
 

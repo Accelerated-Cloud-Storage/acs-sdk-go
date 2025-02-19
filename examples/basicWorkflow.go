@@ -1,3 +1,4 @@
+// Copyright 2025 Accelerated Cloud Storage Corporation. All Rights Reserved.
 package main 
 
 import (

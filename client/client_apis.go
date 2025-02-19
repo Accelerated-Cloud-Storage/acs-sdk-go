@@ -1,3 +1,4 @@
+// Copyright 2025 Accelerated Cloud Storage Corporation. All Rights Reserved.
 // Package client provides a Go client for interacting with the Accelerated Cloud Storage service.
 package client
 
@@ -11,7 +12,7 @@ import (
 	"path/filepath"
 	"time"
 
-	pb "github.com/AcceleratedCloudStorage/acs-sdk-go/generated"
+	pb "github.com/AcceleratedCloudStorage/acs-sdk-go/internal/generated"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v2"

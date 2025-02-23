@@ -21,12 +21,20 @@ language version.
 address critical security issues.**
 
 ## Getting started
-[![SDK Documentation](https://img.shields.io/badge/SDK-Documentation-blue)](https://acceleratedcloudstorage.com) [![API Reference](https://img.shields.io/badge/API-Reference-blue.svg)](https://pkg.go.dev/github.com/AcceleratedCloudStorage/acs-sdk-go) [![Demo](https://img.shields.io/badge/Demo-Videos-blue.svg)](https://www.youtube.com/@AcceleratedCloudStorageSales) 
+[![Website](https://img.shields.io/badge/Website-Console-blue)](https://acceleratedcloudstorage.com) [![API Reference](https://img.shields.io/badge/API-Reference-blue.svg)](https://pkg.go.dev/github.com/AcceleratedCloudStorage/acs-sdk-go) [![Demo](https://img.shields.io/badge/Demo-Videos-blue.svg)](https://www.youtube.com/@AcceleratedCloudStorageSales) 
 
 To get started working with the SDK setup your project for Go modules, and retrieve the SDK dependencies with `go get`. This example shows how you can use the SDK to make an API request using the SDK's client.
 
 #### Setup credientials 
-Move your .acs folder to your home folder after downloading it from the console on the [website](https://acceleratedcloudstorage.com).
+Downloading your credentials from the console on the [website](https://acceleratedcloudstorage.com).
+
+Next, set up credentials (in e.g. ``~/.acs/credentials``):
+```
+default:
+    access_key_id = YOUR_KEY
+    secret_access_key = YOUR_SECRET
+```
+Note: You can include multiple profiles and set them using the ACS_PROFILE environment variable. 
 
 #### Initialize Project
 ```sh
@@ -57,7 +65,7 @@ We have a discussion forum where you can read about announcements, product ideas
 
 ### Contact us 
 
-Email us at sales@acceleratedcloudstorage.com if there is a pressing issue for you. 
+Email us at sales@acceleratedcloudstorage.com if you have any further questions or concerns.  
 
 [Dep]: https://github.com/golang/dep
 [Issues]: https://github.com/AcceleratedCloudStorage/acs-sdk-go/issues

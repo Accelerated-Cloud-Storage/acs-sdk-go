@@ -4,7 +4,10 @@ package client
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -13,7 +16,7 @@ import (
 
 	pb "github.com/AcceleratedCloudStorage/acs-sdk-go/generated"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 )
 
@@ -24,13 +27,37 @@ type ACSClient struct {
 	conn   *grpc.ClientConn
 }
 
+
+func loadClientTLSCredentials() (credentials.TransportCredentials, error) {
+	// Load CA certificate chain
+	caCert, err := os.ReadFile("/home/ec2-user/ca-chain.pem")
+	if err != nil {
+		return nil, err
+	}
+
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(caCert) {
+		log.Fatalf("Failed to append CA certificates")
+	}
+
+	tlsConfig := &tls.Config{
+		RootCAs: certPool,
+	}
+
+	return credentials.NewTLS(tlsConfig), nil
+}
+
 // NewClient initializes a new gRPC client with authentication.
 // It establishes a secure connection to the ACS service, loads credentials,
 // and performs initial authentication. It also checks for key rotation needs.
 // Returns an error if connection, authentication, or credential loading fails.
 func NewClient() (*ACSClient, error) {
+	tlsCredentials, err := loadClientTLSCredentials()
+	if err != nil {
+		log.Fatalf("Failed to load TLS credentials: %v", err)
+	}
 	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithTransportCredentials(tlsCredentials),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(1024*1024*1024), // 1GB
 			grpc.MaxCallSendMsgSize(1024*1024*1024), // 1GB

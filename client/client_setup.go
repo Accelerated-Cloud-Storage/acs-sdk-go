@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+	"embed"
 
 	"gopkg.in/yaml.v2"
 
@@ -27,24 +28,21 @@ type ACSClient struct {
 	conn   *grpc.ClientConn
 }
 
+var _ = embed.FS{}
+//go:embed internal/ca-chain.pem
+var embeddedCACert []byte
 
 func loadClientTLSCredentials() (credentials.TransportCredentials, error) {
-	// Load CA certificate chain
-	caCert, err := os.ReadFile("/home/ec2-user/ca-chain.pem")
-	if err != nil {
-		return nil, err
-	}
+    certPool := x509.NewCertPool()
+    if !certPool.AppendCertsFromPEM(embeddedCACert) {
+        log.Fatalf("Failed to append CA certificates")
+    }
 
-	certPool := x509.NewCertPool()
-	if !certPool.AppendCertsFromPEM(caCert) {
-		log.Fatalf("Failed to append CA certificates")
-	}
+    tlsConfig := &tls.Config{
+        RootCAs: certPool,
+    }
 
-	tlsConfig := &tls.Config{
-		RootCAs: certPool,
-	}
-
-	return credentials.NewTLS(tlsConfig), nil
+    return credentials.NewTLS(tlsConfig), nil
 }
 
 // NewClient initializes a new gRPC client with authentication.

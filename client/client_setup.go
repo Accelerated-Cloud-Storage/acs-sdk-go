@@ -6,7 +6,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"embed"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -24,54 +26,51 @@ import (
 type ACSClient struct {
 	client pb.ObjectStorageCacheClient
 	conn   *grpc.ClientConn
+	retry  RetryConfig
+}
+
+// Ensure compliation
+var _ = embed.FS{}
+
+//go:embed internal/ca-chain.pem
+var embeddedCACert []byte
+
+// loadClientTLSCredentials loads the CA certificates from the embedded file.
+// It creates a new CertPool and appends the certificates to it.
+// Returns the TransportCredentials with the loaded certificates.
+func loadClientTLSCredentials() (credentials.TransportCredentials, error) {
+	certPool := x509.NewCertPool()
+	if !certPool.AppendCertsFromPEM(embeddedCACert) {
+		log.Fatalf("Failed to append CA certificates")
+	}
+
+	tlsConfig := &tls.Config{
+		RootCAs:    certPool,
+		MinVersion: tls.VersionTLS12,
+	}
+
+	return credentials.NewTLS(tlsConfig), nil
 }
 
 // NewClient initializes a new gRPC client with authentication.
-// It establishes a secure connection to the ACS service, loads credentials,
-// and performs initial authentication. It also checks for key rotation needs.
-// Returns an error if connection, authentication, or credential loading fails.
+// It establishes a secure connection to the ACS service, loads credentials, and performs initial authentication.
 func NewClient() (*ACSClient, error) {
-	// Configure TLS with the system cert pool
-	rootCAs, err := x509.SystemCertPool()
+	tlsCredentials, err := loadClientTLSCredentials()
 	if err != nil {
-		rootCAs = x509.NewCertPool()
+		log.Fatalf("Failed to load TLS credentials: %v", err)
 	}
-	config := &tls.Config{
-		ServerName:         "acceleratedcloudstorages3cache.com",
-		RootCAs:            rootCAs,
-		MinVersion:         tls.VersionTLS12,
-		InsecureSkipVerify: false,                      // Keep this false for production
-		NextProtos:         []string{"h2", "http/1.1"}, // Add ALPN protocols
-	}
-
-	creds := credentials.NewTLS(config)
-
 	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(creds),
+		grpc.WithTransportCredentials(tlsCredentials),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(1024*1024*1024), // 1GB
 			grpc.MaxCallSendMsgSize(1024*1024*1024), // 1GB
 		),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
-			Time:                20 * time.Second,
-			Timeout:             60 * time.Second,
+			Time:                10 * time.Second, // 10 seconds between pings
+			Timeout:             5 * time.Second,  // 5 seconds timeout for pings
 			PermitWithoutStream: true,
 		}),
 	}
-	opts = append(opts,
-		grpc.WithDefaultServiceConfig(`{
-        "loadBalancingPolicy": "round_robin",
-        "methodConfig": [{
-            "name": [{}],
-            "retryPolicy": {
-                "maxAttempts": 3,
-                "initialBackoff": "0.1s",
-                "maxBackoff": "1s",
-                "backoffMultiplier": 2.0
-            }
-        }]
-    }`),
-	)
 
 	// Create connection
 	conn, err := grpc.NewClient(serverAddress, opts...)
@@ -79,14 +78,15 @@ func NewClient() (*ACSClient, error) {
 		return nil, fmt.Errorf("failed to connect: %v", err)
 	}
 
-	// Create client
+	// Create client with default retry config
 	client := &ACSClient{
 		client: pb.NewObjectStorageCacheClient(conn),
 		conn:   conn,
+		retry:  DefaultRetryConfig,
 	}
 
-	// Load credentials
-	serviceCreds, err := loadCredentials()
+	// Load credentials from disk
+	serviceCreds, err := loadACSCredentials()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load credentials: %v", err)
 	}
@@ -120,10 +120,10 @@ func (client *ACSClient) Close() error {
 	return nil
 }
 
-// loadCredentials loads the credentials from the ~/.acs/credentials.yaml file.
-// It creates the credentials file with default values if it doesn't exist.
-// The function respects the ACS_PROFILE environment variable to select the appropriate profile.
-func loadCredentials() (*credentialsContents, error) {
+// loadACSCredentials loads the service's credentials from the ~/.acs/credentials.yaml file.
+// It creates the file with default values if it doesn't exist.
+func loadACSCredentials() (*credentialsContents, error) {
+	// Find home directory of user
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get home directory: %v", err)
@@ -173,7 +173,7 @@ func loadCredentials() (*credentialsContents, error) {
 	// Get profile from environment variable, default to "default" if not set
 	profile := os.Getenv("ACS_PROFILE")
 	if profile == "" {
-		fmt.Println("No ACS_PROFILE environment variable set, using 'default' profile.")
+		fmt.Println("ACS_PROFILE environment variable not set, using 'default' profile.")
 		profile = "default"
 	}
 

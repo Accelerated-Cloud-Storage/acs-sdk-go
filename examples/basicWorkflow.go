@@ -1,8 +1,11 @@
 // Copyright 2025 Accelerated Cloud Storage Corporation. All Rights Reserved.
-package main 
+package main
 
 import (
 	"context"
+	"fmt"
+	"time"
+
 	"github.com/AcceleratedCloudStorage/acs-sdk-go/client"
 )
 
@@ -17,7 +20,7 @@ func main() {
 	defer acsClient.Close()
 
 	// Create a new bucket
-	bucketName := "my-bucket"
+	bucketName := fmt.Sprintf("my-bucket-%d", time.Now().UnixNano())
 	err = acsClient.CreateBucket(context, bucketName, "us-east-1")
 	if err != nil {
 		panic(err)

@@ -18,8 +18,7 @@ import (
 )
 
 // CreateBucket sends a request to create a new bucket.
-// It requires a bucket name and region specification.
-// Returns an error if the bucket creation fails.
+// It requires a bucket name and region specification and returns an error if bucket creation fails.
 func (client *ACSClient) CreateBucket(ctx context.Context, bucket, region string) error {
 	return withRetryNoReturn(ctx, client.retry, func(ctx context.Context) error {
 		req := &pb.CreateBucketRequest{
@@ -37,7 +36,7 @@ func (client *ACSClient) CreateBucket(ctx context.Context, bucket, region string
 }
 
 // DeleteBucket requests deletion of the specified bucket.
-// Returns an error if the bucket deletion fails or the bucket doesn't exist.
+// It returns an error if bucket deletion fails or if the bucket doesn't exist.
 func (client *ACSClient) DeleteBucket(ctx context.Context, bucket string) error {
 	return withRetryNoReturn(ctx, client.retry, func(ctx context.Context) error {
 		req := &pb.DeleteBucketRequest{
@@ -54,7 +53,7 @@ func (client *ACSClient) DeleteBucket(ctx context.Context, bucket string) error 
 }
 
 // ListBuckets retrieves all buckets from the server.
-// Returns a list of bucket objects and an error if the operation fails.
+// It returns a list of bucket objects and an error if the operation fails.
 func (client *ACSClient) ListBuckets(ctx context.Context) ([]*pb.Bucket, error) {
 	return withRetry(ctx, client.retry, func(ctx context.Context) ([]*pb.Bucket, error) {
 		req := &pb.ListBucketsRequest{}
@@ -69,8 +68,7 @@ func (client *ACSClient) ListBuckets(ctx context.Context) ([]*pb.Bucket, error) 
 }
 
 // PutObject uploads data to the specified bucket and key.
-// It automatically handles compression for large objects when beneficial.
-// Returns an error if the upload fails.
+// It automatically compresses large objects when beneficial and returns an error if the upload fails.
 func (client *ACSClient) PutObject(ctx context.Context, bucket, key string, data []byte) error {
 	return withRetryNoReturn(ctx, client.retry, func(ctx context.Context) error {
 		// Only compress if data is larger than threshold and compression would be beneficial
@@ -143,7 +141,7 @@ func (client *ACSClient) PutObject(ctx context.Context, bucket, key string, data
 }
 
 // GetObject downloads the specified object from the server.
-// Returns the object's data and an error if the download fails.
+// It returns the object’s data and an error if the download fails.
 func (client *ACSClient) GetObject(ctx context.Context, bucket, key string) ([]byte, error) {
 	return withRetry(ctx, client.retry, func(ctx context.Context) ([]byte, error) {
 		req := &pb.GetObjectRequest{
@@ -183,7 +181,7 @@ func (client *ACSClient) GetObject(ctx context.Context, bucket, key string) ([]b
 }
 
 // DeleteObject removes a single object from a bucket.
-// Returns an error if the deletion fails.
+// It returns an error if deletion fails.
 func (client *ACSClient) DeleteObject(ctx context.Context, bucket, key string) error {
 	return withRetryNoReturn(ctx, client.retry, func(ctx context.Context) error {
 		req := &pb.DeleteObjectRequest{
@@ -201,7 +199,7 @@ func (client *ACSClient) DeleteObject(ctx context.Context, bucket, key string) e
 }
 
 // HeadObject retrieves metadata for a specific object.
-// Returns the object's metadata and an error if the operation fails.
+// It returns the object’s metadata and an error if the operation fails.
 func (client *ACSClient) HeadObject(ctx context.Context, bucket, key string) (*HeadObjectOutput, error) {
 	return withRetry(ctx, client.retry, func(ctx context.Context) (*HeadObjectOutput, error) {
 		req := &pb.HeadObjectRequest{
@@ -229,7 +227,7 @@ func (client *ACSClient) HeadObject(ctx context.Context, bucket, key string) (*H
 }
 
 // DeleteObjects requests bulk deletion of objects in a bucket.
-// Returns an error if any object deletion fails.
+// It returns an error if any object deletion fails.
 func (client *ACSClient) DeleteObjects(ctx context.Context, bucket string, keys []string) error {
 	return withRetryNoReturn(ctx, client.retry, func(ctx context.Context) error {
 		objects := make([]*pb.ObjectIdentifier, len(keys))
@@ -257,7 +255,7 @@ func (client *ACSClient) DeleteObjects(ctx context.Context, bucket string, keys 
 }
 
 // ListObjects retrieves object keys from the server based on given options.
-// Returns a list of object keys and an error if the operation fails.
+// It returns a list of object keys and an error if the operation fails.
 func (client *ACSClient) ListObjects(ctx context.Context, bucket string, opts *ListObjectsOptions) ([]string, error) {
 	return withRetry(ctx, client.retry, func(ctx context.Context) ([]string, error) {
 		req := &pb.ListObjectsRequest{
@@ -300,7 +298,7 @@ func (client *ACSClient) ListObjects(ctx context.Context, bucket string, opts *L
 }
 
 // HeadBucket retrieves metadata for a specific bucket.
-// Returns the bucket's metadata and an error if the operation fails.
+// It returns the bucket's metadata and an error if the operation fails.
 func (client *ACSClient) HeadBucket(ctx context.Context, bucket string) (*HeadBucketOutput, error) {
 	return withRetry(ctx, client.retry, func(ctx context.Context) (*HeadBucketOutput, error) {
 		req := &pb.HeadBucketRequest{
@@ -318,9 +316,9 @@ func (client *ACSClient) HeadBucket(ctx context.Context, bucket string) (*HeadBu
 	})
 }
 
-// RotateKey checks if key rotation is needed and performs it if necessary.
-// The force parameter can be used to require rotation regardless of timing.
-// Returns an error if the rotation fails.
+// RotateKey checks whether key rotation is needed and performs it if necessary.
+// The force parameter may be used to force rotation regardless of timing.
+// It returns an error if the rotation fails.
 func (client *ACSClient) RotateKey(ctx context.Context, force bool) error {
 	// Get the home directory
 	homeDir, err := os.UserHomeDir()
@@ -383,7 +381,7 @@ func (client *ACSClient) RotateKey(ctx context.Context, force bool) error {
 }
 
 // ShareBucket informs the service about a bucket that has been shared with it.
-// Returns an error if the sharing operation fails or permissions are insufficient.
+// It returns an error if the sharing operation fails or if permissions are insufficient.
 func (client *ACSClient) ShareBucket(ctx context.Context, bucket string) error {
 	return withRetryNoReturn(ctx, client.retry, func(ctx context.Context) error {
 		req := &pb.ShareBucketRequest{
@@ -412,7 +410,7 @@ func (client *ACSClient) ShareBucket(ctx context.Context, bucket string) error {
 }
 
 // CopyObject copies an object from a source bucket/key to a destination bucket/key.
-// Returns an error if the copy operation fails.
+// It returns an error if the copy operation fails.
 func (client *ACSClient) CopyObject(ctx context.Context, bucket, copySource, key string) error {
 	return withRetryNoReturn(ctx, client.retry, func(ctx context.Context) error {
 		req := &pb.CopyObjectRequest{

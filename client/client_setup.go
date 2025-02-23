@@ -29,7 +29,7 @@ type ACSClient struct {
 	retry  RetryConfig
 }
 
-// Ensure compliation 
+// Ensure compliation
 var _ = embed.FS{}
 
 //go:embed internal/ca-chain.pem
@@ -45,7 +45,7 @@ func loadClientTLSCredentials() (credentials.TransportCredentials, error) {
 	}
 
 	tlsConfig := &tls.Config{
-		RootCAs: certPool,
+		RootCAs:    certPool,
 		MinVersion: tls.VersionTLS12,
 	}
 
@@ -53,9 +53,7 @@ func loadClientTLSCredentials() (credentials.TransportCredentials, error) {
 }
 
 // NewClient initializes a new gRPC client with authentication.
-// It establishes a secure connection to the ACS service, loads credentials,
-// and performs initial authentication. It also checks for key rotation needs.
-// Returns an error if connection, authentication, or credential loading fails.
+// It establishes a secure connection to the ACS service, loads credentials, and performs initial authentication.
 func NewClient() (*ACSClient, error) {
 	tlsCredentials, err := loadClientTLSCredentials()
 	if err != nil {
@@ -123,10 +121,9 @@ func (client *ACSClient) Close() error {
 }
 
 // loadACSCredentials loads the service's credentials from the ~/.acs/credentials.yaml file.
-// It creates the credentials file with default values if it doesn't exist.
-// The function respects the ACS_PROFILE environment variable to select the appropriate profile.
+// It creates the file with default values if it doesn't exist.
 func loadACSCredentials() (*credentialsContents, error) {
-	// Find home directory of user 
+	// Find home directory of user
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get home directory: %v", err)

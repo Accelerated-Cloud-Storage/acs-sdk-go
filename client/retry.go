@@ -1,3 +1,5 @@
+// Copyright 2025 Accelerated Cloud Storage Corporation. All Rights Reserved.
+// Package client provides a Go client for interacting with the Accelerated Cloud Storage service.
 package client
 
 import (
@@ -8,15 +10,20 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// RetryConfig defines the configuration for retry behavior
+// RetryConfig defines the configuration for retry behavior.
+// It is used by retry logic to configure attempt limits and backoff.
 type RetryConfig struct {
-	MaxAttempts      int           // Maximum number of retry attempts
-	InitialBackoff   time.Duration // Initial backoff duration
-	MaxBackoff       time.Duration // Maximum backoff duration
-	BackoffMultipler float64       // Multiplier for exponential backoff
+	// MaxAttempts is the maximum number of retry attempts.
+	MaxAttempts int
+	// InitialBackoff is the initial backoff duration.
+	InitialBackoff time.Duration
+	// MaxBackoff is the maximum backoff duration.
+	MaxBackoff time.Duration
+	// BackoffMultipler is the multiplier for exponential backoff.
+	BackoffMultipler float64
 }
 
-// DefaultRetryConfig provides reasonable default values for retry behavior
+// DefaultRetryConfig provides reasonable default values for retry behavior.
 var DefaultRetryConfig = RetryConfig{
 	MaxAttempts:      5,
 	InitialBackoff:   100 * time.Millisecond,
@@ -35,7 +42,7 @@ func shouldRetry(err error) bool {
 		return false
 	}
 
-	switch st.Code() { // Check for gRPC status codes to determine whether to retry 
+	switch st.Code() { // Check for gRPC status codes to determine whether to retry
 	case codes.DeadlineExceeded,
 		codes.Unavailable,
 		codes.ResourceExhausted,

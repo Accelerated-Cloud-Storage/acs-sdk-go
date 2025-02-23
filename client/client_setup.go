@@ -29,9 +29,15 @@ type ACSClient struct {
 	retry  RetryConfig
 }
 
+// Ensure compliation 
 var _ = embed.FS{}
+
 //go:embed internal/ca-chain.pem
 var embeddedCACert []byte
+
+// loadClientTLSCredentials loads the CA certificates from the embedded file.
+// It creates a new CertPool and appends the certificates to it.
+// Returns the TransportCredentials with the loaded certificates.
 func loadClientTLSCredentials() (credentials.TransportCredentials, error) {
 	certPool := x509.NewCertPool()
 	if !certPool.AppendCertsFromPEM(embeddedCACert) {
@@ -40,6 +46,7 @@ func loadClientTLSCredentials() (credentials.TransportCredentials, error) {
 
 	tlsConfig := &tls.Config{
 		RootCAs: certPool,
+		MinVersion: tls.VersionTLS12,
 	}
 
 	return credentials.NewTLS(tlsConfig), nil
@@ -81,7 +88,7 @@ func NewClient() (*ACSClient, error) {
 	}
 
 	// Load credentials from disk
-	serviceCreds, err := loadCredentials()
+	serviceCreds, err := loadACSCredentials()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load credentials: %v", err)
 	}
@@ -115,10 +122,10 @@ func (client *ACSClient) Close() error {
 	return nil
 }
 
-// loadCredentials loads the credentials from the ~/.acs/credentials.yaml file.
+// loadACSCredentials loads the service's credentials from the ~/.acs/credentials.yaml file.
 // It creates the credentials file with default values if it doesn't exist.
 // The function respects the ACS_PROFILE environment variable to select the appropriate profile.
-func loadCredentials() (*credentialsContents, error) {
+func loadACSCredentials() (*credentialsContents, error) {
 	// Find home directory of user 
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -169,7 +176,7 @@ func loadCredentials() (*credentialsContents, error) {
 	// Get profile from environment variable, default to "default" if not set
 	profile := os.Getenv("ACS_PROFILE")
 	if profile == "" {
-		fmt.Println("No ACS_PROFILE environment variable set, using 'default' profile.")
+		fmt.Println("ACS_PROFILE environment variable not set, using 'default' profile.")
 		profile = "default"
 	}
 

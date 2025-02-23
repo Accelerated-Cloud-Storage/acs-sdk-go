@@ -18,9 +18,9 @@ type RetryConfig struct {
 
 // DefaultRetryConfig provides reasonable default values for retry behavior
 var DefaultRetryConfig = RetryConfig{
-	MaxAttempts:      3,
+	MaxAttempts:      5,
 	InitialBackoff:   100 * time.Millisecond,
-	MaxBackoff:       2 * time.Second,
+	MaxBackoff:       5 * time.Second,
 	BackoffMultipler: 2.0,
 }
 

@@ -4,8 +4,6 @@ package client
 
 import (
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,7 +13,7 @@ import (
 
 	pb "github.com/AcceleratedCloudStorage/acs-sdk-go/generated"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 )
 
@@ -31,23 +29,8 @@ type ACSClient struct {
 // and performs initial authentication. It also checks for key rotation needs.
 // Returns an error if connection, authentication, or credential loading fails.
 func NewClient() (*ACSClient, error) {
-	// Configure TLS with the system cert pool
-	rootCAs, err := x509.SystemCertPool()
-	if err != nil {
-		rootCAs = x509.NewCertPool()
-	}
-	config := &tls.Config{
-		ServerName:         "acceleratedcloudstorages3cache.com",
-		RootCAs:            rootCAs,
-		MinVersion:         tls.VersionTLS12,
-		InsecureSkipVerify: false,                      // Keep this false for production
-		NextProtos:         []string{"h2", "http/1.1"}, // Add ALPN protocols
-	}
-
-	creds := credentials.NewTLS(config)
-
 	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(creds),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(
 			grpc.MaxCallRecvMsgSize(1024*1024*1024), // 1GB
 			grpc.MaxCallSendMsgSize(1024*1024*1024), // 1GB
@@ -58,20 +41,6 @@ func NewClient() (*ACSClient, error) {
 			PermitWithoutStream: true,
 		}),
 	}
-	opts = append(opts,
-		grpc.WithDefaultServiceConfig(`{
-        "loadBalancingPolicy": "round_robin",
-        "methodConfig": [{
-            "name": [{}],
-            "retryPolicy": {
-                "maxAttempts": 3,
-                "initialBackoff": "0.1s",
-                "maxBackoff": "1s",
-                "backoffMultiplier": 2.0
-            }
-        }]
-    }`),
-	)
 
 	// Create connection
 	conn, err := grpc.NewClient(serverAddress, opts...)

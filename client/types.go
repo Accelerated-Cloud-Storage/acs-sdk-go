@@ -9,6 +9,12 @@ const (
 	serverAddress = "acceleratedcloudstorages3cache.com:50050"
 )
 
+// Session represents a client session configuration.
+// It contains optional parameters that can be provided when creating a new client.
+type Session struct {
+	Region string // The AWS region to use for this session
+}
+
 // HeadBucketOutput represents the metadata returned by HeadBucket operation.
 // It contains information about a bucket's configuration and status.
 type HeadBucketOutput struct {

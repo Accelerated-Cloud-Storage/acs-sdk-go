@@ -47,3 +47,12 @@ type credentialsContents struct {
 // profileCredentials holds multiple named credential profiles.
 // Each profile contains a set of credentials for accessing the service.
 type profileCredentials map[string]credentialsContents
+
+
+// GetObjectOptions holds the options for GetObject
+type GetObjectOptions struct {
+	rangeSpec string
+}
+
+// GetObjectOption is a function that configures GetObjectOptions
+type GetObjectOption func(*GetObjectOptions)

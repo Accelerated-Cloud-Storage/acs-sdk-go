@@ -151,12 +151,26 @@ func (client *ACSClient) PutObject(ctx context.Context, bucket, key string, data
 }
 
 // GetObject downloads the specified object from the server.
+// If rangeSpec is provided in the format "bytes=start-end" (e.g., "bytes=0-9" for first 10 bytes),
+// only the specified range of the object will be downloaded.
 // It returns the object's data and an error if the download fails.
-func (client *ACSClient) GetObject(ctx context.Context, bucket, key string) ([]byte, error) {
+func (client *ACSClient) GetObject(ctx context.Context, bucket, key string, options ...GetObjectOption) ([]byte, error) {
+	// Apply options
+	opts := &GetObjectOptions{
+		rangeSpec: "",
+	}
+	for _, option := range options {
+		option(opts)
+	}
+
 	return withRetry(ctx, client.retry, func(ctx context.Context) ([]byte, error) {
 		req := &pb.GetObjectRequest{
 			Bucket: bucket,
 			Key:    key,
+		}
+
+		if opts.rangeSpec != "" {
+			req.Range = &opts.rangeSpec
 		}
 
 		stream, err := client.client.GetObject(ctx, req)

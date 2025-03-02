@@ -80,6 +80,7 @@ message PutObjectResponse {
 message GetObjectRequest {
   string bucket = 1;
   string key = 2;
+  optional string range = 3;  // Range in format "bytes=start-end" (e.g., "bytes=0-9" for first 10 bytes)
 }
 
 message GetObjectResponse {

@@ -13,7 +13,7 @@ func main() {
 	context := context.Background()
 
 	// Create a new GRPC client
-	acsClient, err := client.NewClient()
+	acsClient, err := client.NewClient(&client.Session{Region: "us-east-1"})
 	if err != nil {
 		panic(err)
 	}
@@ -21,7 +21,7 @@ func main() {
 
 	// Create a new bucket
 	bucketName := fmt.Sprintf("my-bucket-%d", time.Now().UnixNano())
-	err = acsClient.CreateBucket(context, bucketName, "us-east-1")
+	err = acsClient.CreateBucket(context, bucketName)
 	if err != nil {
 		panic(err)
 	}

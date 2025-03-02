@@ -19,11 +19,10 @@ import (
 
 // CreateBucket sends a request to create a new bucket.
 // It requires a bucket name and region specification and returns an error if bucket creation fails.
-func (client *ACSClient) CreateBucket(ctx context.Context, bucket, region string) error {
+func (client *ACSClient) CreateBucket(ctx context.Context, bucket string) error {
 	return withRetryNoReturn(ctx, client.retry, func(ctx context.Context) error {
 		req := &pb.CreateBucketRequest{
 			Bucket: bucket,
-			Region: region,
 		}
 
 		_, err := client.client.CreateBucket(ctx, req)

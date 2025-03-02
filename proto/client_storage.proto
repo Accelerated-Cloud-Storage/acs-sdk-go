@@ -31,7 +31,6 @@ service ObjectStorageCache {
 // Request/Response messages for bucket operations
 message CreateBucketRequest {
   string bucket = 1;
-  string region = 2;
 }
 
 message CreateBucketResponse {

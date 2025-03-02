@@ -54,7 +54,6 @@ type credentialsContents struct {
 // Each profile contains a set of credentials for accessing the service.
 type profileCredentials map[string]credentialsContents
 
-
 // GetObjectOptions holds the options for GetObject
 type GetObjectOptions struct {
 	rangeSpec string

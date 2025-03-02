@@ -72,9 +72,9 @@ func (client *ACSClient) ListBuckets(ctx context.Context) ([]*pb.Bucket, error) 
 func (client *ACSClient) PutObject(ctx context.Context, bucket, key string, data []byte) error {
 	return withRetryNoReturn(ctx, client.retry, func(ctx context.Context) error {
 		// Only compress if data is larger than threshold and compression would be beneficial
-		const compressionThreshold = 100 * 1024 * 1024 // 1MB threshold
+		const compressionThreshold = 100 * 1024 * 1024 // 100MB threshold
 		isCompressed := false
-		if len(data) >= compressionThreshold {
+		if len(data) > compressionThreshold {
 			var buf bytes.Buffer
 			gw, err := gzip.NewWriterLevel(&buf, gzip.BestSpeed) // Use fastest compression
 			if err != nil {
@@ -113,8 +113,18 @@ func (client *ACSClient) PutObject(ctx context.Context, bucket, key string, data
 			return fmt.Errorf("failed to send parameters: %v", err)
 		}
 
+		// Determine chunk size based on data size
+		var chunkSize int
+		switch {
+		case len(data) < 1024*1024: // < 1MB
+			chunkSize = 64 * 1024 // 64KB chunks
+		case len(data) < 100*1024*1024: // < 100MB
+			chunkSize = 1024 * 1024 // 1MB chunks
+		default:
+			chunkSize = 8 * 1024 * 1024 // 8MB chunks
+		}
+
 		// Send data in chunks
-		const chunkSize = 64 * 1024 // 64KB chunks
 		for i := 0; i < len(data); i += chunkSize {
 			end := i + chunkSize
 			if end > len(data) {
@@ -141,7 +151,7 @@ func (client *ACSClient) PutObject(ctx context.Context, bucket, key string, data
 }
 
 // GetObject downloads the specified object from the server.
-// It returns the object’s data and an error if the download fails.
+// It returns the object's data and an error if the download fails.
 func (client *ACSClient) GetObject(ctx context.Context, bucket, key string) ([]byte, error) {
 	return withRetry(ctx, client.retry, func(ctx context.Context) ([]byte, error) {
 		req := &pb.GetObjectRequest{
@@ -199,7 +209,7 @@ func (client *ACSClient) DeleteObject(ctx context.Context, bucket, key string) e
 }
 
 // HeadObject retrieves metadata for a specific object.
-// It returns the object’s metadata and an error if the operation fails.
+// It returns the object's metadata and an error if the operation fails.
 func (client *ACSClient) HeadObject(ctx context.Context, bucket, key string) (*HeadObjectOutput, error) {
 	return withRetry(ctx, client.retry, func(ctx context.Context) (*HeadObjectOutput, error) {
 		req := &pb.HeadObjectRequest{

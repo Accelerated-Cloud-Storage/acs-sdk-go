@@ -146,6 +146,7 @@ message ListObjectsResponse {
 message AuthRequest {
     string access_key_id = 1;
     string secret_access_key = 2;
+    optional string region = 3;  // Optional region for the session
 }
 
 message AuthResponse {

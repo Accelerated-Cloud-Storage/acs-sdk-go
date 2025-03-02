@@ -166,6 +166,7 @@ func (client *ACSClient) GetObject(ctx context.Context, bucket, key string) ([]b
 
 		var data []byte
 		firstMessage := true
+		isCompressed := false
 
 		for {
 			resp, err := stream.Recv()
@@ -176,14 +177,34 @@ func (client *ACSClient) GetObject(ctx context.Context, bucket, key string) ([]b
 				return nil, fmt.Errorf("error receiving chunk: %v", err)
 			}
 
-			// Skip metadata message for now
+			// Process metadata message
 			if firstMessage {
 				firstMessage = false
+				// Check if data is compressed
+				if metadata := resp.GetMetadata(); metadata != nil {
+					isCompressed = metadata.GetIsCompressed()
+				}
 				continue
 			}
 
 			// Append chunk data
 			data = append(data, resp.GetChunk()...)
+		}
+
+		// Decompress data if it was compressed
+		if isCompressed {
+			reader, err := gzip.NewReader(bytes.NewReader(data))
+			if err != nil {
+				return nil, fmt.Errorf("failed to create gzip reader: %v", err)
+			}
+			decompressed, err := io.ReadAll(reader)
+			if err != nil {
+				return nil, fmt.Errorf("failed to decompress data: %v", err)
+			}
+			if err := reader.Close(); err != nil {
+				return nil, fmt.Errorf("failed to close gzip reader: %v", err)
+			}
+			data = decompressed
 		}
 
 		return data, nil

@@ -29,7 +29,6 @@ func main() {
 		panic(err)
 	}
 	fmt.Printf("Bucket creation took: %v\n", time.Since(start))
-	defer acsClient.DeleteBucket(context, bucketName)
 
 	// Create a new object
 	objectName := fmt.Sprintf("my-object-%d", time.Now().UnixNano())

@@ -25,7 +25,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer acsClient.DeleteBucket(context, bucketName)
 
 	fmt.Println("Bucket created:", bucketName)
 	// Create a new object
@@ -51,9 +50,12 @@ func main() {
 		panic(err)
 	}
 	fmt.Println("Object deleted:", objectName)
+
+
 	// Delete the bucket
 	err = acsClient.DeleteBucket(context, bucketName)
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("Bucket deleted:", bucketName)
 }

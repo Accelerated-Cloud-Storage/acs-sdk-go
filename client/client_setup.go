@@ -24,9 +24,10 @@ import (
 // ACSClient wraps the gRPC connection and client for ObjectStorageCache.
 // It provides high-level operations for interacting with the ACS service.
 type ACSClient struct {
-	client pb.ObjectStorageCacheClient
-	conn   *grpc.ClientConn
-	retry  RetryConfig
+	client  pb.ObjectStorageCacheClient
+	conn    *grpc.ClientConn
+	retry   RetryConfig
+	session *Session
 }
 
 // Ensure compliation
@@ -35,9 +36,8 @@ var _ = embed.FS{}
 //go:embed internal/ca-chain.pem
 var embeddedCACert []byte
 
-// loadClientTLSCredentials loads the CA certificates from the embedded file.
-// It creates a new CertPool and appends the certificates to it.
-// Returns the TransportCredentials with the loaded certificates.
+// loadClientTLSCredentials loads the CA certificates from the embedded file and returns
+// the TransportCredentials with the loaded certificates.
 func loadClientTLSCredentials() (credentials.TransportCredentials, error) {
 	certPool := x509.NewCertPool()
 	if !certPool.AppendCertsFromPEM(embeddedCACert) {
@@ -53,8 +53,9 @@ func loadClientTLSCredentials() (credentials.TransportCredentials, error) {
 }
 
 // NewClient initializes a new gRPC client with authentication.
-// It establishes a secure connection to the ACS service, loads credentials, and performs initial authentication.
-func NewClient() (*ACSClient, error) {
+// It establishes a secure connection to the ACS service, loads credentials,
+// and performs initial authentication.
+func NewClient(session *Session) (*ACSClient, error) {
 	tlsCredentials, err := loadClientTLSCredentials()
 	if err != nil {
 		log.Fatalf("Failed to load TLS credentials: %v", err)
@@ -80,9 +81,10 @@ func NewClient() (*ACSClient, error) {
 
 	// Create client with default retry config
 	client := &ACSClient{
-		client: pb.NewObjectStorageCacheClient(conn),
-		conn:   conn,
-		retry:  DefaultRetryConfig,
+		client:  pb.NewObjectStorageCacheClient(conn),
+		conn:    conn,
+		retry:   DefaultRetryConfig,
+		session: session, // Store the session
 	}
 
 	// Load credentials from disk
@@ -91,13 +93,24 @@ func NewClient() (*ACSClient, error) {
 		return nil, fmt.Errorf("failed to load credentials: %v", err)
 	}
 
+	// Prepare authentication request
+	authReq := &pb.AuthRequest{
+		AccessKeyId:     serviceCreds.AccessKeyID,
+		SecretAccessKey: serviceCreds.SecretAccessKey,
+	}
+
+	// Add region if provided in session
+	if session != nil && session.Region != "" {
+		authReq.Region = &session.Region
+	} else {
+		DefaultRegion := "us-east-1"
+		authReq.Region = &DefaultRegion
+	}
+
 	// Perform authentication
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	_, err = client.client.Authenticate(ctx, &pb.AuthRequest{
-		AccessKeyId:     serviceCreds.AccessKeyID,
-		SecretAccessKey: serviceCreds.SecretAccessKey,
-	})
+	_, err = client.client.Authenticate(ctx, authReq)
 	if err != nil {
 		client.Close()
 		return nil, fmt.Errorf("authentication failed: %v", err)

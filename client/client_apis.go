@@ -19,11 +19,10 @@ import (
 
 // CreateBucket sends a request to create a new bucket.
 // It requires a bucket name and region specification and returns an error if bucket creation fails.
-func (client *ACSClient) CreateBucket(ctx context.Context, bucket, region string) error {
+func (client *ACSClient) CreateBucket(ctx context.Context, bucket string) error {
 	return withRetryNoReturn(ctx, client.retry, func(ctx context.Context) error {
 		req := &pb.CreateBucketRequest{
 			Bucket: bucket,
-			Region: region,
 		}
 
 		_, err := client.client.CreateBucket(ctx, req)
@@ -72,9 +71,9 @@ func (client *ACSClient) ListBuckets(ctx context.Context) ([]*pb.Bucket, error) 
 func (client *ACSClient) PutObject(ctx context.Context, bucket, key string, data []byte) error {
 	return withRetryNoReturn(ctx, client.retry, func(ctx context.Context) error {
 		// Only compress if data is larger than threshold and compression would be beneficial
-		const compressionThreshold = 100 * 1024 * 1024 // 1MB threshold
+		const compressionThreshold = 100 * 1024 * 1024 // 100MB threshold
 		isCompressed := false
-		if len(data) >= compressionThreshold {
+		if len(data) > compressionThreshold {
 			var buf bytes.Buffer
 			gw, err := gzip.NewWriterLevel(&buf, gzip.BestSpeed) // Use fastest compression
 			if err != nil {
@@ -113,8 +112,20 @@ func (client *ACSClient) PutObject(ctx context.Context, bucket, key string, data
 			return fmt.Errorf("failed to send parameters: %v", err)
 		}
 
+		// Determine chunk size based on data size
+		var chunkSize int
+		switch {
+		case len(data) < 1024*1024: // < 1MB
+			chunkSize = 64 * 1024 // 64KB chunks
+		case len(data) < 10*1024*1024: // < 10MB
+			chunkSize = 256 * 1024 // 256KB
+		case len(data) < 100*1024*1024: // < 100MB
+			chunkSize = 1024 * 1024 // 1MB chunks
+		default:
+			chunkSize = 4 * 1024 * 1024 // 4MB chunks
+		}
+
 		// Send data in chunks
-		const chunkSize = 64 * 1024 // 64KB chunks
 		for i := 0; i < len(data); i += chunkSize {
 			end := i + chunkSize
 			if end > len(data) {
@@ -141,12 +152,26 @@ func (client *ACSClient) PutObject(ctx context.Context, bucket, key string, data
 }
 
 // GetObject downloads the specified object from the server.
-// It returns the object’s data and an error if the download fails.
-func (client *ACSClient) GetObject(ctx context.Context, bucket, key string) ([]byte, error) {
+// If rangeSpec is provided in the format "bytes=start-end" (e.g., "bytes=0-9" for first 10 bytes),
+// only the specified range of the object will be downloaded.
+// It returns the object's data and an error if the download fails.
+func (client *ACSClient) GetObject(ctx context.Context, bucket, key string, options ...GetObjectOption) ([]byte, error) {
+	// Apply options
+	opts := &GetObjectOptions{
+		rangeSpec: "",
+	}
+	for _, option := range options {
+		option(opts)
+	}
+
 	return withRetry(ctx, client.retry, func(ctx context.Context) ([]byte, error) {
 		req := &pb.GetObjectRequest{
 			Bucket: bucket,
 			Key:    key,
+		}
+
+		if opts.rangeSpec != "" {
+			req.Range = &opts.rangeSpec
 		}
 
 		stream, err := client.client.GetObject(ctx, req)
@@ -156,6 +181,7 @@ func (client *ACSClient) GetObject(ctx context.Context, bucket, key string) ([]b
 
 		var data []byte
 		firstMessage := true
+		isCompressed := false
 
 		for {
 			resp, err := stream.Recv()
@@ -166,14 +192,34 @@ func (client *ACSClient) GetObject(ctx context.Context, bucket, key string) ([]b
 				return nil, fmt.Errorf("error receiving chunk: %v", err)
 			}
 
-			// Skip metadata message for now
+			// Process metadata message
 			if firstMessage {
 				firstMessage = false
+				// Check if data is compressed
+				if metadata := resp.GetMetadata(); metadata != nil {
+					isCompressed = metadata.GetIsCompressed()
+				}
 				continue
 			}
 
 			// Append chunk data
 			data = append(data, resp.GetChunk()...)
+		}
+
+		// Decompress data if it was compressed
+		if isCompressed {
+			reader, err := gzip.NewReader(bytes.NewReader(data))
+			if err != nil {
+				return nil, fmt.Errorf("failed to create gzip reader: %v", err)
+			}
+			decompressed, err := io.ReadAll(reader)
+			if err != nil {
+				return nil, fmt.Errorf("failed to decompress data: %v", err)
+			}
+			if err := reader.Close(); err != nil {
+				return nil, fmt.Errorf("failed to close gzip reader: %v", err)
+			}
+			data = decompressed
 		}
 
 		return data, nil
@@ -199,7 +245,7 @@ func (client *ACSClient) DeleteObject(ctx context.Context, bucket, key string) e
 }
 
 // HeadObject retrieves metadata for a specific object.
-// It returns the object’s metadata and an error if the operation fails.
+// It returns the object's metadata and an error if the operation fails.
 func (client *ACSClient) HeadObject(ctx context.Context, bucket, key string) (*HeadObjectOutput, error) {
 	return withRetry(ctx, client.retry, func(ctx context.Context) (*HeadObjectOutput, error) {
 		req := &pb.HeadObjectRequest{

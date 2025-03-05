@@ -58,6 +58,28 @@ func main() {
 	fmt.Printf("GetObject operation took: %v\n", time.Since(start))
 	fmt.Printf("Retrieved data size: %d bytes\n", len(data))
 
+	// Get object with range - retrieve only the first 1MB
+	fmt.Println("\nPerforming ranged GetObject operation...")
+	start = time.Now()
+	rangeData, err := acsClient.GetObject(context, bucketName, objectName, client.WithRange("bytes=0-1048575"))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Ranged GetObject operation took: %v\n", time.Since(start))
+	fmt.Printf("Retrieved range data size: %d bytes\n", len(rangeData))
+
+	// Get object with range - retrieve 1MB from the middle of the file
+	fmt.Println("\nPerforming another ranged GetObject operation (middle of file)...")
+	start = time.Now()
+	middleOffset := 5 * 1024 * 1024 * 1024 // 5GB offset
+	rangeMiddle, err := acsClient.GetObject(context, bucketName, objectName,
+		client.WithRange(fmt.Sprintf("bytes=%d-%d", middleOffset, middleOffset+1048575)))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Middle ranged GetObject operation took: %v\n", time.Since(start))
+	fmt.Printf("Retrieved middle range data size: %d bytes\n", len(rangeMiddle))
+
 	// Delete object
 	start = time.Now()
 	err = acsClient.DeleteObject(context, bucketName, objectName)

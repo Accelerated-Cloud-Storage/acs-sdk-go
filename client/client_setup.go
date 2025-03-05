@@ -27,7 +27,7 @@ type ACSClient struct {
 	client  pb.ObjectStorageCacheClient
 	conn    *grpc.ClientConn
 	retry   RetryConfig
-	session *Session // Store the session configuration
+	session *Session
 }
 
 // Ensure compliation
@@ -36,9 +36,8 @@ var _ = embed.FS{}
 //go:embed internal/ca-chain.pem
 var embeddedCACert []byte
 
-// loadClientTLSCredentials loads the CA certificates from the embedded file.
-// It creates a new CertPool and appends the certificates to it.
-// Returns the TransportCredentials with the loaded certificates.
+// loadClientTLSCredentials loads the CA certificates from the embedded file and returns
+// the TransportCredentials with the loaded certificates.
 func loadClientTLSCredentials() (credentials.TransportCredentials, error) {
 	certPool := x509.NewCertPool()
 	if !certPool.AppendCertsFromPEM(embeddedCACert) {
@@ -54,7 +53,8 @@ func loadClientTLSCredentials() (credentials.TransportCredentials, error) {
 }
 
 // NewClient initializes a new gRPC client with authentication.
-// It establishes a secure connection to the ACS service, loads credentials, and performs initial authentication.
+// It establishes a secure connection to the ACS service, loads credentials,
+// and performs initial authentication.
 func NewClient(session *Session) (*ACSClient, error) {
 	tlsCredentials, err := loadClientTLSCredentials()
 	if err != nil {
@@ -102,6 +102,9 @@ func NewClient(session *Session) (*ACSClient, error) {
 	// Add region if provided in session
 	if session != nil && session.Region != "" {
 		authReq.Region = &session.Region
+	} else {
+		DefaultRegion := "us-east-1"
+		authReq.Region = &DefaultRegion
 	}
 
 	// Perform authentication

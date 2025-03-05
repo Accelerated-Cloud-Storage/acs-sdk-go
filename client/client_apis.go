@@ -117,10 +117,12 @@ func (client *ACSClient) PutObject(ctx context.Context, bucket, key string, data
 		switch {
 		case len(data) < 1024*1024: // < 1MB
 			chunkSize = 64 * 1024 // 64KB chunks
+		case len(data) < 10*1024*1024: // < 10MB
+			chunkSize = 256 * 1024 // 256KB
 		case len(data) < 100*1024*1024: // < 100MB
 			chunkSize = 1024 * 1024 // 1MB chunks
 		default:
-			chunkSize = 8 * 1024 * 1024 // 8MB chunks
+			chunkSize = 4 * 1024 * 1024 // 4MB chunks
 		}
 
 		// Send data in chunks

@@ -1,3 +1,8 @@
+# v0.3.0 (2025-02-16)
+
+* **Feature**: Added multi-region buckets and improved performance of large object operations. 
+* **Dependency Update**: Updated to the latest SDK module versions.
+
 # v0.2.0 (2025-02-16)
 
 * **Feature**: Added client retries and updated TLS configuration. 

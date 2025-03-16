@@ -26,7 +26,7 @@ address critical security issues.**
 To get started working with the SDK setup your project for Go modules, and retrieve the SDK dependencies with `go get`. This example shows how you can use the SDK to make an API request using the SDK's client.
 
 #### Setup credientials 
-Downloading your credentials from the console on the [website](https://acceleratedcloudstorage.com).
+Get your your credentials from the console on the [website](https://acceleratedcloudstorage.io).
 
 Next, set up credentials (in e.g. ``~/.acs/credentials``):
 ```
@@ -34,7 +34,7 @@ default:
     access_key_id = YOUR_KEY
     secret_access_key = YOUR_SECRET
 ```
-Note: You can include multiple profiles and set them using the ACS_PROFILE environment variable. 
+Note: You can include multiple profiles and set them using the ACS_PROFILE environment variable. See the examples/config folder for a sample file. 
 
 #### Initialize Project
 ```sh

@@ -21,12 +21,12 @@ language version.
 address critical security issues.**
 
 ## Getting started
-[![Website](https://img.shields.io/badge/Website-Console-blue)](https://acceleratedcloudstorage.com) [![API Reference](https://img.shields.io/badge/API-Reference-blue.svg)](https://pkg.go.dev/github.com/AcceleratedCloudStorage/acs-sdk-go) [![Demo](https://img.shields.io/badge/Demo-Videos-blue.svg)](https://www.youtube.com/@AcceleratedCloudStorageSales) 
+[![Website](https://img.shields.io/badge/Website-Console-blue)](https://acceleratedcloudstorage.io) [![API Reference](https://img.shields.io/badge/API-Reference-blue.svg)](https://pkg.go.dev/github.com/AcceleratedCloudStorage/acs-sdk-go) [![Demo](https://img.shields.io/badge/Demo-Videos-blue.svg)](https://www.youtube.com/@AcceleratedCloudStorageSales) 
 
 To get started working with the SDK setup your project for Go modules, and retrieve the SDK dependencies with `go get`. This example shows how you can use the SDK to make an API request using the SDK's client.
 
-#### Setup credientials 
-Downloading your credentials from the console on the [website](https://acceleratedcloudstorage.com).
+#### Get credientials 
+Get your credentials and setup payments from the console on the [website](https://acceleratedcloudstorage.io).
 
 Next, set up credentials (in e.g. ``~/.acs/credentials``):
 ```
@@ -34,7 +34,7 @@ default:
     access_key_id = YOUR_KEY
     secret_access_key = YOUR_SECRET
 ```
-Note: You can include multiple profiles and set them using the ACS_PROFILE environment variable. 
+Note: You can include multiple profiles and set them using the ACS_PROFILE environment variable. See the examples/config folder for a sample file. 
 
 #### Initialize Project
 ```sh
@@ -48,7 +48,47 @@ $ go get github.com/AcceleratedCloudStorage/acs-sdk-go/client
 ```
 
 #### Write Code
-Check out the example folder. 
+You can either use the client for an interface similar to the AWS SDK or a FUSE mount for a file system interface. Check out the example folder for more details.
+
+## Share bucket
+
+You can also bring your existing buckets into the service by setting a bucket policy and then sharing the bucket with the service.
+
+### Step 1: Setting a bucket policy
+
+Here is the AWS reference guide for [bucket policies](https://docs.aws.amazon.com/AmazonS3/latest/userguide/add-bucket-policy.html). You can set the following bucket policy through the AWS Console or SDK to enable ACS to access it.
+
+```
+{
+"Version": "2012-10-17",
+   "Statement": [
+    {
+     "Sid": "AllowUserFullAccess", 
+     "Effect": "Allow",
+     "Principal": {
+      "AWS": "arn:aws:iam::160885293701:root"
+     },
+     "Action": [
+      "s3:*"
+     ],
+     "Resource": [
+      "arn:aws:s3:::BUCKETNAME",
+      "arn:aws:s3:::BUCKETNAME/*"
+     ]
+    }
+   ]
+}
+```
+
+### Step 2: Notify ACS of this newly shared bucket
+
+```
+// Create a new client
+acsClient, err := client.NewClient(&client.Session{Region: "us-east-1"})
+defer acsClient.Close()
+// Share a bucket
+err = client.ShareBucket(context, BUCKETNAME)
+```
 
 ## Getting Help
 

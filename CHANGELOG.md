@@ -1,9 +1,14 @@
-# v0.3.0 (2025-02-16)
+# v0.3.1 (2025-03-16)
+
+* **Feature**: Added additional documentation.
+* **Dependency Update**: Updated to the latest SDK module versions.
+
+# v0.3.0 (2025-03-04)
 
 * **Feature**: Added multi-region buckets and improved performance of large object operations. 
 * **Dependency Update**: Updated to the latest SDK module versions.
 
-# v0.2.0 (2025-02-16)
+# v0.2.0 (2025-02-19)
 
 * **Feature**: Added client retries and updated TLS configuration. 
 * **Dependency Update**: Updated to the latest SDK module versions and removed FUSE mount for now. 

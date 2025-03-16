@@ -48,7 +48,7 @@ $ go get github.com/AcceleratedCloudStorage/acs-sdk-go/client
 ```
 
 #### Write Code
-Check out the example folder. 
+You can either use the client for an interface similar to the AWS SDK or a FUSE mount for a file system interface. Check out the example folder for more details.
 
 ## Share bucket
 
@@ -89,7 +89,6 @@ defer acsClient.Close()
 // Share a bucket
 err = client.ShareBucket(context, BUCKETNAME)
 ```
-
 
 ## Getting Help
 

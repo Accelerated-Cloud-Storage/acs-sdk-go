@@ -25,7 +25,8 @@ address critical security issues.**
 
 To get started working with the SDK setup your project for Go modules, and retrieve the SDK dependencies with `go get`. This example shows how you can use the SDK to make an API request using the SDK's client.
 
-#### Get credientials 
+#### Get credentials
+
 Get your credentials and setup payments from the console on the [website](https://acceleratedcloudstorage.io).
 
 Next, set up credentials (in e.g. ``~/.acs/credentials``):

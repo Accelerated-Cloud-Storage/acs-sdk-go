@@ -1,6 +1,6 @@
 module github.com/AcceleratedCloudStorage/acs-sdk-go
 
-go 1.23.4
+go 1.24.0
 
 require (
 	google.golang.org/grpc v1.71.0

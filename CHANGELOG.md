@@ -1,3 +1,8 @@
+# v0.4.0 (2025-04-09)
+
+* **Feature**: Switch to new server address for multi-region infrastructure. 
+* **Dependency Update**: Updated to the latest SDK module versions.
+
 # v0.3.1 (2025-03-16)
 
 * **Feature**: Added additional documentation.

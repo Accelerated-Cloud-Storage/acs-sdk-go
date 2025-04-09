@@ -6,7 +6,7 @@ import "time"
 
 // serverAddress is the endpoint for the ACS service.
 const (
-	serverAddress = "acceleratedcloudstorages3cache.com:50050"
+	serverAddress = "acceleratedcloudstorageproduction.com:50050"
 )
 
 // Session represents a client session configuration.

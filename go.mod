@@ -10,6 +10,7 @@ require (
 
 require (
 	github.com/kr/pretty v0.3.1 // indirect
+	github.com/pierrec/lz4/v4 v4.1.22
 	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect

@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"time"
 
 	"github.com/AcceleratedCloudStorage/acs-sdk-go/client"
@@ -37,7 +38,7 @@ func main() {
 	dataStart := time.Now()
 	objectData := make([]byte, 10*1024*1024*1024) // 10 GB
 	for i := range objectData {
-		objectData[i] = byte(i % 256) // Fill with some pattern
+		objectData[i] = byte(rand.Intn(256)) // Fill with random bytes
 	}
 	fmt.Printf("Data generation took: %v\n", time.Since(dataStart))
 

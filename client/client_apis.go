@@ -66,50 +66,6 @@ func (client *ACSClient) ListBuckets(ctx context.Context) ([]*pb.Bucket, error) 
 	})
 }
 
-// estimateCompressionRatio estimates the LZ4 compression ratio by sampling the data
-func (client *ACSClient) estimateCompressionRatio(data []byte) (float64, error) {
-	totalSize := len(data)
-
-	// Calculate sample size as 1% of total size, bounded between MIN and MAX
-	targetSampleSize := int(float64(totalSize) * sampleRatio)
-	if targetSampleSize < minSampleSize {
-		targetSampleSize = minSampleSize
-	}
-	if targetSampleSize > maxSampleSize {
-		targetSampleSize = maxSampleSize
-	}
-
-	// Take three samples: beginning, middle, and end
-	perSampleSize := targetSampleSize / 3
-	middle := totalSize / 2
-	samples := [][]byte{
-		data[:perSampleSize],
-		data[middle-perSampleSize/2 : middle+perSampleSize/2],
-		data[len(data)-perSampleSize:],
-	}
-
-	// Test compression ratio on samples
-	var totalSampleSize int
-	var totalCompressedSize int
-
-	for _, sample := range samples {
-		var buf bytes.Buffer
-		w := lz4.NewWriter(&buf)
-		w.Apply(lz4.CompressionLevelOption(0))
-		if _, err := w.Write(sample); err != nil {
-			return 0, fmt.Errorf("compression sample failed: %v", err)
-		}
-		if err := w.Close(); err != nil {
-			return 0, fmt.Errorf("compression close failed: %v", err)
-		}
-
-		totalSampleSize += len(sample)
-		totalCompressedSize += buf.Len()
-	}
-
-	return float64(totalCompressedSize) / float64(totalSampleSize), nil
-}
-
 // PutObject uploads data to the specified bucket and key.
 // It automatically compresses large objects when beneficial and returns an error if the upload fails.
 func (client *ACSClient) PutObject(ctx context.Context, bucket, key string, data []byte) error {
@@ -119,7 +75,7 @@ func (client *ACSClient) PutObject(ctx context.Context, bucket, key string, data
 
 		if dataLen >= compressionThreshold {
 			// Estimate compression ratio first
-			ratio, err := client.estimateCompressionRatio(data)
+			ratio, err := estimateCompressionRatio(data)
 			if err != nil {
 				// Log error but continue without compression
 				fmt.Printf("Warning: Compression estimation failed: %v\n", err)
@@ -271,9 +227,8 @@ func (client *ACSClient) GetObject(ctx context.Context, bucket, key string, opti
 			// Create a reader for the compressed data
 			r := lz4.NewReader(bytes.NewReader(data))
 
-			// Pre-allocate decompression buffer - LZ4 typically has 2-3x compression ratio
-			// Start with 2.5x the compressed size
-			decompressed := make([]byte, 0, len(data)*5/2)
+			// Pre-allocate decompression buffer - LZ4 typically has 2x compression ratio
+			decompressed := make([]byte, 0, len(data)*2)
 
 			// Read the decompressed data in chunks to avoid large allocations
 			chunk := make([]byte, 32*1024*1024) // 32MB chunks

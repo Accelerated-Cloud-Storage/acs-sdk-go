@@ -201,8 +201,8 @@ func (client *ACSClient) GetObject(ctx context.Context, bucket, key string, opti
 
 		isCompressed := metadata.GetIsCompressed()
 
-		// Start with a smaller initial buffer (64KB) and grow as needed
-		buf := bytes.NewBuffer(make([]byte, 0, 64*1024))
+		// Start with a small initial buffer (256KB) and grow as needed
+		buf := bytes.NewBuffer(make([]byte, 0, 256*1024))
 
 		// Read all chunks
 		for {

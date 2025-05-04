@@ -188,11 +188,23 @@ func (client *ACSClient) GetObject(ctx context.Context, bucket, key string, opti
 			return nil, fmt.Errorf("failed to start GetObject stream: %v", err)
 		}
 
-		// Initialize a large buffer - 32MB initial size for better streaming performance
-		buf := bytes.NewBuffer(make([]byte, 0, 32*1024*1024))
-		firstMessage := true
-		isCompressed := false
+		// Get first message to check metadata
+		resp, err := stream.Recv()
+		if err != nil {
+			return nil, fmt.Errorf("error receiving metadata: %v", err)
+		}
 
+		metadata := resp.GetMetadata()
+		if metadata == nil {
+			return nil, fmt.Errorf("missing metadata in first message")
+		}
+
+		isCompressed := metadata.GetIsCompressed()
+
+		// Start with a small initial buffer (256KB) and grow as needed
+		buf := bytes.NewBuffer(make([]byte, 0, 256*1024))
+
+		// Read all chunks
 		for {
 			resp, err := stream.Recv()
 			if err == io.EOF {
@@ -201,17 +213,6 @@ func (client *ACSClient) GetObject(ctx context.Context, bucket, key string, opti
 			if err != nil {
 				return nil, fmt.Errorf("error receiving chunk: %v", err)
 			}
-
-			// Process metadata message
-			if firstMessage {
-				firstMessage = false
-				if metadata := resp.GetMetadata(); metadata != nil {
-					isCompressed = metadata.GetIsCompressed()
-				}
-				continue
-			}
-
-			// Write chunk directly to buffer
 			if chunk := resp.GetChunk(); chunk != nil {
 				if _, err := buf.Write(chunk); err != nil {
 					return nil, fmt.Errorf("error writing chunk: %v", err)
@@ -219,7 +220,6 @@ func (client *ACSClient) GetObject(ctx context.Context, bucket, key string, opti
 			}
 		}
 
-		// Get the final data
 		data := buf.Bytes()
 
 		// Decompress data if it was compressed

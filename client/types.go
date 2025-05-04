@@ -7,6 +7,13 @@ import "time"
 // serverAddress is the endpoint for the ACS service.
 const (
 	serverAddress = "acceleratedcloudstorageproduction.com:50050"
+
+	// Compression constants
+	compressionThreshold = 5 * 1024 * 1024 * 1024 // 5GB threshold
+	minSampleSize        = 1 * 1024 * 1024        // 1MB minimum sample
+	maxSampleSize        = 256 * 1024 * 1024      // 256MB maximum sample
+	sampleRatio          = 0.01                   // Sample 1% of data
+	minCompressionRatio  = 0.5                    // Only compress if we can save at least 50%
 )
 
 // Session represents a client session configuration.

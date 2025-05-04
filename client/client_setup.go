@@ -9,11 +9,7 @@ import (
 	"embed"
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
 	"time"
-
-	"gopkg.in/yaml.v2"
 
 	pb "github.com/AcceleratedCloudStorage/acs-sdk-go/generated"
 	"google.golang.org/grpc"
@@ -133,67 +129,3 @@ func (client *ACSClient) Close() error {
 	return nil
 }
 
-// loadACSCredentials loads the service's credentials from the ~/.acs/credentials.yaml file.
-// It creates the file with default values if it doesn't exist.
-func loadACSCredentials() (*credentialsContents, error) {
-	// Find home directory of user
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get home directory: %v", err)
-	}
-
-	// Create the .acs directory if it doesn't exist
-	acsDir := filepath.Join(homeDir, ".acs")
-	if _, err := os.Stat(acsDir); os.IsNotExist(err) {
-		fmt.Println("Accelerated Cloud Storage credential directory does not exist, creating it now . . .")
-		if err := os.Mkdir(acsDir, 0700); err != nil {
-			return nil, fmt.Errorf("failed to create .acs directory: %v", err)
-		}
-	}
-
-	// Check if the credentials file exists
-	credsFile := filepath.Join(acsDir, "credentials.yaml")
-	if _, err := os.Stat(credsFile); os.IsNotExist(err) {
-		fmt.Println("Accelerated Cloud Storage credentials file does not exist, creating it now . . .")
-		defaultCreds := profileCredentials{
-			"default": {
-				AccessKeyID:     "your_access_key_id",
-				SecretAccessKey: "your_secret_access_key",
-			},
-		}
-		data, err := yaml.Marshal(defaultCreds)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal default credentials: %v", err)
-		}
-		if err := os.WriteFile(credsFile, data, 0600); err != nil {
-			return nil, fmt.Errorf("failed to write default credentials file: %v", err)
-		}
-		creds := defaultCreds["default"]
-		return &creds, nil
-	}
-
-	// Read the credentials file
-	data, err := os.ReadFile(credsFile)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read credentials file: %v", err)
-	}
-
-	var profiles profileCredentials
-	if err := yaml.Unmarshal(data, &profiles); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal credentials: %v", err)
-	}
-
-	// Get profile from environment variable, default to "default" if not set
-	profile := os.Getenv("ACS_PROFILE")
-	if profile == "" {
-		fmt.Println("ACS_PROFILE environment variable not set, using 'default' profile.")
-		profile = "default"
-	}
-
-	creds, ok := profiles[profile]
-	if !ok {
-		return nil, fmt.Errorf("profile '%s' not found in credentials file", profile)
-	}
-
-	return &creds, nil
-}

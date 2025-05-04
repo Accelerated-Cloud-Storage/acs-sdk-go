@@ -4,7 +4,6 @@ package client
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"fmt"
 	"io"
@@ -12,6 +11,7 @@ import (
 	"path/filepath"
 
 	pb "github.com/AcceleratedCloudStorage/acs-sdk-go/generated"
+	"github.com/pierrec/lz4/v4"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v2"
@@ -70,26 +70,33 @@ func (client *ACSClient) ListBuckets(ctx context.Context) ([]*pb.Bucket, error) 
 // It automatically compresses large objects when beneficial and returns an error if the upload fails.
 func (client *ACSClient) PutObject(ctx context.Context, bucket, key string, data []byte) error {
 	return withRetryNoReturn(ctx, client.retry, func(ctx context.Context) error {
-		// Only compress if data is larger than threshold and compression would be beneficial
-		const compressionThreshold = 100 * 1024 * 1024 // 100MB threshold
 		isCompressed := false
-		if len(data) > compressionThreshold {
-			var buf bytes.Buffer
-			gw, err := gzip.NewWriterLevel(&buf, gzip.BestSpeed) // Use fastest compression
-			if err != nil {
-				return fmt.Errorf("failed to create gzip writer: %v", err)
-			}
-			if _, err := gw.Write(data); err != nil {
-				return fmt.Errorf("failed to compress data: %v", err)
-			}
-			if err := gw.Close(); err != nil {
-				return fmt.Errorf("failed to close gzip writer: %v", err)
-			}
+		dataLen := len(data)
 
-			// Only use compression if it actually reduces size
-			if buf.Len() < len(data) {
-				isCompressed = true
-				data = buf.Bytes()
+		if dataLen >= compressionThreshold {
+			// Estimate compression ratio first
+			ratio, err := estimateCompressionRatio(data)
+			if err != nil {
+				// Log error but continue without compression
+				fmt.Printf("Warning: Compression estimation failed: %v\n", err)
+			} else if ratio < minCompressionRatio {
+				var buf bytes.Buffer
+				w := lz4.NewWriter(&buf)
+				w.Apply(lz4.CompressionLevelOption(0))
+				if _, err := w.Write(data); err != nil {
+					return fmt.Errorf("failed to compress data: %v", err)
+				}
+				if err := w.Close(); err != nil {
+					return fmt.Errorf("failed to close lz4 writer: %v", err)
+				}
+
+				compressed := buf.Bytes()
+				// Only use compression if it actually reduces size
+				if len(compressed) < dataLen {
+					isCompressed = true
+					data = compressed
+					dataLen = len(compressed)
+				}
 			}
 		}
 
@@ -115,21 +122,23 @@ func (client *ACSClient) PutObject(ctx context.Context, bucket, key string, data
 		// Determine chunk size based on data size
 		var chunkSize int
 		switch {
-		case len(data) < 1024*1024: // < 1MB
-			chunkSize = 64 * 1024 // 64KB chunks
-		case len(data) < 10*1024*1024: // < 10MB
-			chunkSize = 256 * 1024 // 256KB
-		case len(data) < 100*1024*1024: // < 100MB
-			chunkSize = 1024 * 1024 // 1MB chunks
+		case dataLen < 1024*1024: // < 1MB
+			chunkSize = 256 * 1024 // 256KB chunks for small files
+		case dataLen < 10*1024*1024: // < 10MB
+			chunkSize = 512 * 1024 // 512KB chunks for medium files
+		case dataLen < 100*1024*1024: // < 100MB
+			chunkSize = 1 * 1024 * 1024 // 1MB chunks for large files
+		case dataLen < 1024*1024*1024: // < 1GB
+			chunkSize = 2 * 1024 * 1024 // 2MB chunks for very large files
 		default:
-			chunkSize = 4 * 1024 * 1024 // 4MB chunks
+			chunkSize = 4 * 1024 * 1024 // 4MB chunks for huge files
 		}
 
 		// Send data in chunks
-		for i := 0; i < len(data); i += chunkSize {
+		for i := 0; i < dataLen; i += chunkSize {
 			end := i + chunkSize
-			if end > len(data) {
-				end = len(data)
+			if end > dataLen {
+				end = dataLen
 			}
 
 			err := stream.Send(&pb.PutObjectRequest{
@@ -179,7 +188,8 @@ func (client *ACSClient) GetObject(ctx context.Context, bucket, key string, opti
 			return nil, fmt.Errorf("failed to start GetObject stream: %v", err)
 		}
 
-		var data []byte
+		// Initialize a large buffer - 32MB initial size for better streaming performance
+		buf := bytes.NewBuffer(make([]byte, 0, 32*1024*1024))
 		firstMessage := true
 		isCompressed := false
 
@@ -195,29 +205,42 @@ func (client *ACSClient) GetObject(ctx context.Context, bucket, key string, opti
 			// Process metadata message
 			if firstMessage {
 				firstMessage = false
-				// Check if data is compressed
 				if metadata := resp.GetMetadata(); metadata != nil {
 					isCompressed = metadata.GetIsCompressed()
 				}
 				continue
 			}
 
-			// Append chunk data
-			data = append(data, resp.GetChunk()...)
+			// Write chunk directly to buffer
+			if chunk := resp.GetChunk(); chunk != nil {
+				if _, err := buf.Write(chunk); err != nil {
+					return nil, fmt.Errorf("error writing chunk: %v", err)
+				}
+			}
 		}
+
+		// Get the final data
+		data := buf.Bytes()
 
 		// Decompress data if it was compressed
 		if isCompressed {
-			reader, err := gzip.NewReader(bytes.NewReader(data))
-			if err != nil {
-				return nil, fmt.Errorf("failed to create gzip reader: %v", err)
-			}
-			decompressed, err := io.ReadAll(reader)
-			if err != nil {
-				return nil, fmt.Errorf("failed to decompress data: %v", err)
-			}
-			if err := reader.Close(); err != nil {
-				return nil, fmt.Errorf("failed to close gzip reader: %v", err)
+			// Create a reader for the compressed data
+			r := lz4.NewReader(bytes.NewReader(data))
+
+			// Pre-allocate decompression buffer - LZ4 typically has 2x compression ratio
+			decompressed := make([]byte, 0, len(data)*2)
+
+			// Read the decompressed data in chunks to avoid large allocations
+			chunk := make([]byte, 32*1024*1024) // 32MB chunks
+			for {
+				n, err := r.Read(chunk)
+				if err == io.EOF {
+					break
+				}
+				if err != nil {
+					return nil, fmt.Errorf("failed to decompress data: %v", err)
+				}
+				decompressed = append(decompressed, chunk[:n]...)
 			}
 			data = decompressed
 		}
